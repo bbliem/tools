@@ -31,7 +31,7 @@ export dry
 export verbose
 numProcesses=$(nproc)
 #find "$@" -name "*.flac" | xargs -P $numProcesses -n 1 -I{} bash -c 'f="{}"; ffmpeg -i "$f" -qscale:a 0 "${f[@]/%flac/mp3}"'
-find "$@" -name "*.flac" -print0 | sed 's/"/\\"/g' | xargs -P $numProcesses -n 1 -I{} -0 bash -c '
+find "$@" -name "*.flac" -print0 | sed 's/"/\\"/g' | sed "s/'/\'/g" | xargs -P $numProcesses -n 1 -I{} -0 bash -c '
 	f="{}"
 	outfile="$targetdir${f[@]/%flac/mp3}"
 	if [ -f "$outfile" ]; then

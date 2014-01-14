@@ -23,13 +23,33 @@ while getopts dv opt; do
 done
 shift $((OPTIND - 1))
 
+export syncdir
+export dry
+export verbose
+
 cd "$musicdir"
 for artist in "${artists[@]}"; do
 	# Make directory for the artist
-	find "$artist" -type d -exec mkdir -p "$syncdir/{}" \;
+	find "$artist" -type d -print0 | sed 's/"/\\"/g' | sed "s/'/\'/g" | xargs -0 -I{} bash -c '
+		dir="{}"
+		if [ -d "$syncdir/$dir" ]; then
+			[ -z $verbose ] || echo "Directory $dir already exists"
+		else
+			echo "Creating directory $dir"
+			[ $dry ] || mkdir -p "$syncdir/$dir"
+		fi
+		'
 
 	# Make hard link for all .mp3 and .jpg files
-	find "$artist" -type f -regex '.*\.\(mp3\|jpg\)$' -exec ln "{}" "$syncdir/{}" \; 2> /dev/null # suppress errors (to silently do nothing when the target already exists)
+	find "$artist" -type f -regex '.*\.\(mp3\|jpg\)$' -print0 | sed 's/"/\\"/g' | sed "s/'/\'/g" | xargs -0 -I{} bash -c '
+		file="{}"
+		if [ -f "$syncdir/$file" ]; then
+			[ -z $verbose ] || echo "File $file already exists"
+		else
+			echo "Linking $file"
+			[ $dry ] || ln "$file" "$syncdir/$file"
+		fi
+		'
 done
 
 # Convert FLACs to MP3
